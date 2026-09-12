@@ -1,22 +1,415 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
-  <title>W's Days</title>
-  <meta http-equiv="refresh" content="0; url=https://claude.ai/code/artifact/d2fd0c00-0a92-4b1e-bb1f-c678104d4a95">
-  <style>
-    body { background: #F4F6F3; color: #232B26; font: 400 16px/1.5 system-ui, sans-serif;
-           display: grid; place-items: center; min-height: 90vh; margin: 0; padding: 16px; }
-    a { color: #3E7259; }
-    @media (prefers-color-scheme: dark) {
-      body { background: #151A17; color: #E2E8E3; } a { color: #85B99A; }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>W's Days</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #F4F6F3; --surface: #FDFEFC; --ink: #232B26; --ink-soft: #5C6862;
+    --ink-faint: #8B968F; --line: #DDE4DE; --accent: #3E7259; --accent-ink: #FFFFFF;
+    --accent-soft: #E3EEE7; --danger: #A04B3C;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #151A17; --surface: #1D2420; --ink: #E2E8E3; --ink-soft: #9BA8A0;
+      --ink-faint: #6C7871; --line: #2C3630; --accent: #85B99A; --accent-ink: #14201A;
+      --accent-soft: #24332B; --danger: #D08B7D;
     }
-  </style>
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground); color: var(--ink); margin: 0;
+    font: 400 16px/1.5 "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+    padding-inline: 16px; padding-block: 0 48px;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 640px; margin-inline: auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 18px 10px; }
+  .wordmark { font: 600 20px/1 Fraunces, Georgia, serif; letter-spacing: 0.01em; }
+  .wordmark span { color: var(--accent); }
+  nav { display: flex; gap: 4px; }
+  nav button {
+    font: 600 14px/1 "Source Sans 3", sans-serif; color: var(--ink-soft);
+    background: none; border: none; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  }
+  nav button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px; margin-block: 8px 20px;
+  }
+  .card h2 { font: 600 18px/1.3 Fraunces, Georgia, serif; margin: 0 0 8px; }
+  .card ol { margin: 8px 0; padding-left: 20px; }
+  .card li { margin-block: 6px; }
+  .card a { color: var(--accent); }
+  .muted { color: var(--ink-soft); font-size: 14px; }
+  .tokrow { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  #tokenInput {
+    flex: 1; min-width: 200px; font: 400 15px/1.3 ui-monospace, monospace;
+    color: var(--ink); background: var(--ground); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .btn {
+    font: 600 15px/1 "Source Sans 3", sans-serif; background: var(--accent); color: var(--accent-ink);
+    border: none; border-radius: 999px; padding: 11px 22px; cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn.ghost { background: none; border: 1px solid var(--line); color: var(--ink-soft); }
+  .err { color: var(--danger); font-size: 14px; margin-block: 8px; }
+
+  .compose {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px; margin-block: 4px 22px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .compose textarea {
+    background: none; border: none; resize: none; color: var(--ink);
+    font: 400 17px/1.45 "Source Sans 3", sans-serif; min-height: 58px; width: 100%;
+  }
+  .compose textarea::placeholder, .askhint { color: var(--ink-faint); }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    font: 600 13px/1 "Source Sans 3", sans-serif; font-variant-numeric: tabular-nums;
+    color: var(--ink-soft); background: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 12px; cursor: pointer;
+  }
+  .chip.edited { color: var(--accent); border-color: var(--accent); }
+  #whenInput {
+    font: 400 14px/1 "Source Sans 3", sans-serif; color: var(--ink); background: var(--ground);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  }
+  .spacer { flex: 1; }
+
+  .day { margin-block: 0 20px; }
+  .day h2 { font: 500 15px/1 Fraunces, Georgia, serif; color: var(--ink-soft); margin: 0 0 8px 2px; }
+  .entry { display: flex; gap: 10px; align-items: flex-start; padding-block: 9px; }
+  .day .entry + .entry { border-top: 1px solid var(--line); }
+  .entry time {
+    font: 600 13px/1.5 "Source Sans 3", sans-serif; font-variant-numeric: tabular-nums;
+    color: var(--ink-faint); flex: 0 0 44px; padding-top: 2px;
+  }
+  .entry p { margin: 0; flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .entry .del {
+    flex: 0 0 auto; background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); font-size: 15px; padding: 2px 6px; line-height: 1.3;
+  }
+  .entry .del.arm { color: var(--danger); font-weight: 600; }
+  .empty { color: var(--ink-faint); text-align: center; padding-block: 36px; }
+  .note { color: var(--ink-faint); font-size: 13px; text-align: center; margin-top: 20px; }
+
+  #board { white-space: pre-wrap; overflow-wrap: anywhere; }
+  #board h2 { margin-top: 0; }
+  .stamp { color: var(--ink-faint); font-size: 13px; margin-top: 12px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .entry { animation: settle 0.18s ease-out; }
+    @keyframes settle { from { opacity: 0; transform: translateY(3px); } }
+  }
+</style>
 </head>
 <body>
-  <p>Opening W&rsquo;s Days&hellip; <a href="https://claude.ai/code/artifact/d2fd0c00-0a92-4b1e-bb1f-c678104d4a95">Tap here if nothing happens.</a></p>
-  <script>location.replace("https://claude.ai/code/artifact/d2fd0c00-0a92-4b1e-bb1f-c678104d4a95");</script>
+<div class="wrap">
+  <header>
+    <div class="wordmark"><span>W</span>&rsquo;s Days</div>
+    <nav id="tabs" hidden>
+      <button id="tabJournal" aria-selected="true">Journal</button>
+      <button id="tabCoach" aria-selected="false">Coach</button>
+    </nav>
+  </header>
+
+  <section id="setup" hidden>
+    <div class="card">
+      <h2>Connect your notebook</h2>
+      <p class="muted">This page is public, but it shows nothing without your key. Paste a GitHub token once and it stays on this device only.</p>
+      <ol>
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com &rarr; fine-grained token</a></li>
+        <li>Resource owner: <strong>Casarico-ch</strong> &middot; Repository access: <em>Only select repositories</em> &rarr; <strong>family</strong></li>
+        <li>Permissions &rarr; Repository &rarr; <strong>Contents: Read and write</strong> &middot; pick the longest expiration</li>
+        <li>Generate, copy, paste below</li>
+      </ol>
+      <div class="tokrow">
+        <input id="tokenInput" type="password" placeholder="github_pat_..." autocomplete="off">
+        <button id="tokenSave" class="btn">Connect</button>
+      </div>
+      <div id="setupErr" class="err" hidden></div>
+    </div>
+  </section>
+
+  <section id="viewJournal" hidden>
+    <div class="compose">
+      <textarea id="entryText" placeholder="What happened? Just the facts — food, sleep, words, moments. Questions welcome too; the coach answers overnight." autocomplete="off"></textarea>
+      <div class="row">
+        <button id="whenChip" class="chip" title="Tap to backdate">now</button>
+        <input id="whenInput" type="datetime-local" hidden>
+        <div class="spacer"></div>
+        <button id="saveBtn" class="btn" disabled>Save</button>
+      </div>
+    </div>
+    <div id="saveErr" class="err" hidden></div>
+    <div id="entries"><div class="empty">Loading&hellip;</div></div>
+    <p class="note">Entries shown here are the ones awaiting tonight&rsquo;s filing; everything ever saved lives in the archive.</p>
+  </section>
+
+  <section id="viewCoach" hidden>
+    <div class="card" id="board">Loading&hellip;</div>
+    <p class="askhint" style="font-size:14px">Ask anything by saving it as a normal entry &mdash; &ldquo;why does he refuse the bath lately?&rdquo; &mdash; and the answer appears here after the nightly review (~21:00).</p>
+    <div class="row">
+      <button id="signOut" class="btn ghost">Disconnect this device</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var OWNER = "Casarico-ch", REPO = "family", BRANCH = "claude/quirky-mayer-7g4plq";
+  var API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
+  var $ = function (id) { return document.getElementById(id); };
+  var token = null;
+  try { token = localStorage.getItem("gh_token"); } catch (e) {}
+
+  function headers() {
+    return {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+  }
+  function b64decode(b64) {
+    var bin = atob(b64.replace(/\n/g, ""));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function b64encode(str) {
+    var bytes = new TextEncoder().encode(str), bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function getFile(path) {
+    return fetch(API + path + "?ref=" + BRANCH, { headers: headers() }).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("GitHub " + r.status);
+      return r.json().then(function (j) { return { sha: j.sha, text: b64decode(j.content) }; });
+    });
+  }
+  function putFile(path, text, sha, message) {
+    var body = { message: message, content: b64encode(text), branch: BRANCH };
+    if (sha) body.sha = sha;
+    return fetch(API + path, { method: "PUT", headers: headers(), body: JSON.stringify(body) })
+      .then(function (r) {
+        if (!r.ok) { var err = new Error("GitHub " + r.status); err.status = r.status; throw err; }
+        return r.json();
+      });
+  }
+
+  /* ---------- views ---------- */
+  function show(view) {
+    $("setup").hidden = view !== "setup";
+    $("tabs").hidden = view === "setup";
+    $("viewJournal").hidden = view !== "journal";
+    $("viewCoach").hidden = view !== "coach";
+    $("tabJournal").setAttribute("aria-selected", view === "journal" ? "true" : "false");
+    $("tabCoach").setAttribute("aria-selected", view === "coach" ? "true" : "false");
+  }
+  $("tabJournal").onclick = function () { show("journal"); };
+  $("tabCoach").onclick = function () { show("coach"); loadBoard(); };
+  $("signOut").onclick = function () {
+    try { localStorage.removeItem("gh_token"); } catch (e) {}
+    token = null; show("setup");
+  };
+
+  /* ---------- setup ---------- */
+  $("tokenSave").onclick = function () {
+    var t = $("tokenInput").value.trim();
+    if (!t) return;
+    $("tokenSave").disabled = true; $("setupErr").hidden = true;
+    fetch("https://api.github.com/repos/" + OWNER + "/" + REPO, {
+      headers: { "Authorization": "Bearer " + t, "Accept": "application/vnd.github+json" }
+    }).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      token = t;
+      try { localStorage.setItem("gh_token", t); } catch (e) {}
+      $("tokenInput").value = "";
+      boot();
+    }).catch(function (e) {
+      $("setupErr").textContent = e.message === "404" || e.message === "401"
+        ? "That token can't see the family repo — check owner, repository and Contents permission."
+        : "Couldn't verify the token (" + e.message + "). Check your connection and try again.";
+      $("setupErr").hidden = false;
+    }).then(function () { $("tokenSave").disabled = false; });
+  };
+
+  /* ---------- time helpers ---------- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function isoLocal(d) {
+    var off = -d.getTimezoneOffset(), s = off >= 0 ? "+" : "-", a = Math.abs(off);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+      "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()) +
+      s + pad(Math.floor(a / 60)) + ":" + pad(a % 60);
+  }
+  function dayOf(iso) { return iso.slice(0, 10); }
+  var dayFmt = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" });
+  function dayLabel(day) {
+    var today = dayOf(isoLocal(new Date()));
+    if (day === today) return "Today";
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    if (day === dayOf(isoLocal(y))) return "Yesterday";
+    return dayFmt.format(new Date(day + "T12:00:00"));
+  }
+  function monthPath(iso) { return "inbox/" + iso.slice(0, 7) + ".jsonl"; }
+  function prevMonthPath() {
+    var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+    return "inbox/" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + ".jsonl";
+  }
+
+  /* ---------- compose ---------- */
+  var entryText = $("entryText"), saveBtn = $("saveBtn"),
+      whenChip = $("whenChip"), whenInput = $("whenInput");
+  var whenEdited = false;
+  try { entryText.value = localStorage.getItem("draft") || ""; } catch (e) {}
+  entryText.addEventListener("input", function () {
+    try { localStorage.setItem("draft", entryText.value); } catch (e) {}
+    entryText.style.height = "auto";
+    entryText.style.height = Math.min(entryText.scrollHeight, 200) + "px";
+    syncSave();
+  });
+  function syncSave() { saveBtn.disabled = !entryText.value.trim(); }
+  syncSave();
+
+  whenChip.onclick = function () {
+    whenInput.hidden = !whenInput.hidden;
+    if (!whenInput.hidden && !whenInput.value) whenInput.value = isoLocal(new Date()).slice(0, 16);
+  };
+  whenInput.addEventListener("input", function () {
+    whenEdited = !!whenInput.value;
+    whenChip.textContent = whenEdited ? whenInput.value.replace("T", " ") : "now";
+    whenChip.classList.toggle("edited", whenEdited);
+  });
+
+  function saveEntry(retry) {
+    var text = entryText.value.trim();
+    if (!text) return;
+    var at = whenEdited && whenInput.value ? isoLocal(new Date(whenInput.value)) : isoLocal(new Date());
+    var entry = { id: "e" + Date.now() + Math.random().toString(36).slice(2, 6), text: text, at: at };
+    var path = monthPath(at);
+    saveBtn.disabled = true; $("saveErr").hidden = true;
+    getFile(path).then(function (f) {
+      var content = (f ? f.text : "");
+      if (content && !content.endsWith("\n")) content += "\n";
+      content += JSON.stringify(entry) + "\n";
+      return putFile(path, content, f && f.sha, "inbox: entry " + at.slice(0, 16));
+    }).then(function () {
+      entryText.value = ""; entryText.style.height = "auto";
+      try { localStorage.removeItem("draft"); } catch (e) {}
+      whenEdited = false; whenInput.value = ""; whenInput.hidden = true;
+      whenChip.textContent = "now"; whenChip.classList.remove("edited");
+      syncSave(); entryText.focus(); loadEntries();
+    }).catch(function (e) {
+      if (!retry && (e.status === 409 || e.status === 422)) return saveEntry(true);
+      syncSave();
+      $("saveErr").textContent = "Couldn't save (" + e.message + "). Your text is still here — try again.";
+      $("saveErr").hidden = false;
+    });
+  }
+  saveBtn.onclick = function () { saveEntry(false); };
+
+  /* ---------- entries list ---------- */
+  var listEl = $("entries"), armed = null, fileCache = {};
+  function parseJsonl(text) {
+    var out = [];
+    (text || "").split("\n").forEach(function (line) {
+      line = line.trim(); if (!line) return;
+      try { var o = JSON.parse(line); if (o && o.text && o.at) out.push(o); } catch (e) {}
+    });
+    return out;
+  }
+  function loadEntries() {
+    var paths = [prevMonthPath(), monthPath(isoLocal(new Date()))];
+    if (paths[0] === paths[1]) paths = [paths[0]];
+    Promise.all(paths.map(function (p) {
+      return getFile(p).then(function (f) { fileCache[p] = f; return { path: p, f: f }; });
+    })).then(function (files) {
+      var rows = [];
+      files.forEach(function (x) {
+        if (x.f) parseJsonl(x.f.text).forEach(function (o) { o._path = x.path; rows.push(o); });
+      });
+      rows.sort(function (a, b) { return a.at < b.at ? 1 : -1; });
+      render(rows);
+    }).catch(function (e) {
+      listEl.innerHTML = "";
+      var d = document.createElement("div"); d.className = "err";
+      d.textContent = "Couldn't load entries (" + e.message + ").";
+      listEl.appendChild(d);
+    });
+  }
+  function removeEntry(row) {
+    var f = fileCache[row._path];
+    if (!f) return;
+    var kept = parseJsonl(f.text).filter(function (o) { return o.id !== row.id; });
+    var content = kept.map(function (o) { return JSON.stringify(o); }).join("\n");
+    if (content) content += "\n";
+    putFile(row._path, content, f.sha, "inbox: remove entry").then(loadEntries).catch(loadEntries);
+  }
+  function render(rows) {
+    listEl.textContent = "";
+    if (!rows.length) {
+      var em = document.createElement("div"); em.className = "empty";
+      em.textContent = "Inbox is clear — everything is filed. Add the next moment above.";
+      listEl.appendChild(em); return;
+    }
+    var byDay = {}, order = [];
+    rows.forEach(function (o) {
+      var day = dayOf(o.at);
+      if (!byDay[day]) { byDay[day] = []; order.push(day); }
+      byDay[day].push(o);
+    });
+    order.forEach(function (day) {
+      var sec = document.createElement("section"); sec.className = "day";
+      var h = document.createElement("h2"); h.textContent = dayLabel(day); sec.appendChild(h);
+      byDay[day].forEach(function (o) {
+        var e = document.createElement("div"); e.className = "entry";
+        var t = document.createElement("time"); t.textContent = o.at.slice(11, 16);
+        var p = document.createElement("p"); p.textContent = o.text;
+        var del = document.createElement("button");
+        del.className = "del"; del.textContent = "×";
+        del.setAttribute("aria-label", "Delete entry");
+        del.onclick = function () {
+          if (armed === o.id) { armed = null; removeEntry(o); }
+          else {
+            armed = o.id; del.classList.add("arm"); del.textContent = "delete?";
+            setTimeout(function () { armed = null; del.classList.remove("arm"); del.textContent = "×"; }, 2500);
+          }
+        };
+        e.appendChild(t); e.appendChild(p); e.appendChild(del);
+        sec.appendChild(e);
+      });
+      listEl.appendChild(sec);
+    });
+  }
+
+  /* ---------- coach board ---------- */
+  function loadBoard() {
+    getFile("coach/board.md").then(function (f) {
+      $("board").textContent = f ? f.text
+        : "No coach notes yet. Save a few entries — the first review runs tonight around 21:00.";
+    }).catch(function (e) {
+      $("board").textContent = "Couldn't load the board (" + e.message + ").";
+    });
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    if (!token) { show("setup"); return; }
+    show("journal");
+    loadEntries();
+  }
+  boot();
+})();
+</script>
 </body>
 </html>
